@@ -1,0 +1,77 @@
+{% extends "base.html" %}{% block content %}
+<div class="dashboard">
+  <section class="panel observations">
+    <div class="panel-head"><h2>跨线时段裁决</h2><span>容量线 {{data.handover.capacity}} 人</span></div>
+    <p class="eyebrow">下界 &gt; 容量线记“已超限”；区间跨过容量线记“跨线待证”，不隐匿也不夸大为已超限</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>UTC 时段</th><th>人数区间</th><th>容量线</th><th>裁决</th></tr></thead>
+        <tbody>
+        {% for p in data.handover.periods %}
+          <tr>
+            <td>{{p.bucket[11:16]}}</td>
+            <td class="num">{{p.lower}}–{{p.upper}}</td>
+            <td class="num">{{p.capacity}}</td>
+            <td><span class="severity {{'confirm' if p.status=='已超限' else 'crossing'}}">{{p.status}}</span></td>
+          </tr>
+        {% else %}<tr><td colspan="4">当前批次无跨线时段</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel controls">
+    <div class="panel-head"><h2>连续风险处置记录</h2><span>{{data.handover.record_count}} 条 / {{data.handover.risk_count}} 时段</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>记录</th><th>连续时段</th><th>裁决</th><th>区间包络</th><th>处置状态</th></tr></thead>
+        <tbody>
+        {% for r in data.handover.records %}
+          <tr>
+            <td>{{r.record_id}}</td>
+            <td>{{r.start_bucket[11:16]}}–{{r.end_bucket[11:16]}}（{{r.periods|length}} 时段）</td>
+            <td><span class="severity {{'confirm' if r.status=='已超限' else 'crossing'}}">{{r.status}}</span></td>
+            <td class="num">{{r.lower_min}}–{{r.upper_max}}</td>
+            <td>待处置</td>
+          </tr>
+        {% else %}<tr><td colspan="5">无处置记录</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="status-grid">
+      <div><b>{{data.handover.confirmed_count}}</b><span>已超限时段</span></div>
+      <div><b>{{data.handover.crossing_count}}</b><span>跨线待证时段</span></div>
+    </div>
+    <div class="action-row">
+      <button id="issue-handover" class="filled" data-run="{{run.run_id}}" data-day="{{business_day}}">补发交接单</button>
+    </div>
+  </section>
+
+  <section class="panel rejects">
+    <div class="panel-head"><h2>交接单版本链 · {{business_day}}</h2><span>{{sheets|length}} 版</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>版次</th><th>批次</th><th>状态</th><th>重判定时段</th><th>承继</th><th>操作</th></tr></thead>
+        <tbody>
+        {% for s in sheets %}
+          <tr>
+            <td>V{{s.sheet_no}}</td>
+            <td>{{s.run_id[:10]}}</td>
+            <td><span class="severity {{'confirm' if s.state=='已签收' else 'crossing'}}">{{s.state}}</span></td>
+            <td>{{s.redecided|length}} 个{% if s.redecided %}：{% for d in s.redecided %}{{d.bucket[11:16]}}({{d.change}}){% if not loop.last %}、{% endif %}{% endfor %}{% endif %}</td>
+            <td>{% if s.supersedes %}承 V{{s.supersedes}}{% else %}首版{% endif %}</td>
+            <td>
+              {% if s.state=='待签收' %}
+              <button class="sign-handover" data-day="{{business_day}}" data-sheet="{{s.sheet_no}}">签收</button>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+        {% else %}<tr><td colspan="6">尚未补发交接单</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% include "rejected.html" %}
+</div>
+<script src="/static/handover.js" defer></script>
+{% endblock %}

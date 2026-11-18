@@ -24,4 +24,8 @@ def run(content,parameters=None,stage=7):
     if stage>=7:
         from app.modules.m7_archive.export_out import checksum
         state['archive']['sha256']=checksum(state)
+    if stage>=8:
+        # m8 的 sha 不参与 m7 证据指纹；交接判定建立在归档证据之上。
+        from app.modules.m8_handover.rules import apply as handover_apply
+        state=handover_apply(state)
     return state

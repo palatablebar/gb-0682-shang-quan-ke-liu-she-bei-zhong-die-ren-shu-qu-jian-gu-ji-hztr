@@ -13,6 +13,7 @@
 | M5 人数估界 | 查看并复算人数估界 | `/api/m5_calculate` | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py` |
 | M6 日汇对账 | 查看并复算日汇对账 | `/api/m6_reconcile` | `app/modules/m6_reconcile/compare.py` | `tests/test_reconcile.py` |
 | M7 报告归档 | 查看并复算报告归档 | `/api/m7_archive` | `app/modules/m7_archive/export_out.py` | `tests/test_archive.py` |
+| M8 晚班交接 | 跨线裁决、补发与签收交接单 | `/api/m8_handover`、`/api/handovers` | `app/modules/m8_handover/rules.py`、`storage.py` | `tests/test_handover.py` |
 
 ## 陷阱登记
 
@@ -31,6 +32,11 @@
 | TRAP-26 | 旧版本复核 | 覆盖新结论 | 事务条件更新 | `app/store.py` | `tests/test_archive.py::test_stale_review` |
 | TRAP-11 | 时区混用 | 同刻不同桶 | UTC归整 | `app/modules/m2_mapping/coerce.py` | `tests/test_versions.py::test_same_instant` |
 | TRAP-19 | 三方约束矛盾 | 输出伪精确数 | 非负原子区域可行检查 | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py::test_three_way_contradiction` |
+| TRAP-30 | 区间跨过容量线 | 按下界漏报或按上界夸大为已超限 | 第三态“跨线待证”，单一 classify 裁决 | `app/modules/m8_handover/rules.py` | `tests/test_handover.py::test_three_way_classification` |
+| TRAP-31 | 同一场连续风险 | 每时段各开一条处置记录 | 相邻小时同裁决合并为 R{seq} 一条记录 | `app/modules/m8_handover/rules.py` | `tests/test_handover.py::test_contiguous_risk_merges_into_one_record` |
+| TRAP-32 | 晚到数据 | 悄悄改掉上一班已签收归档 | 只追加新版交接单并列出重判定时段，旧单不可改写 | `app/modules/m8_handover/storage.py` | `tests/test_handover.py::test_signed_archive_not_rewritten` |
+| TRAP-33 | 同批重跑 | 补发产生重复风险段 | 按 (业务日,run_id) 唯一约束幂等返回旧单 | `app/modules/m8_handover/storage.py` | `tests/test_handover.py::test_sheet_issue_and_idempotent_rerun` |
+| TRAP-34 | 补发写失败 | 半新半旧两版并存 | 事务回滚，旧版交接单保持有效 | `app/modules/m8_handover/storage.py` | `tests/test_handover.py::test_failed_reissue_keeps_old_sheet` |
 
 ## 对账规则
 
